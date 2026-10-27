@@ -1,0 +1,40 @@
+name: Build IPA with nxnative
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install xcodegen zstd spirv-cross glslang
+
+      - name: Setup Game Files and Keys
+        env:
+          PROD_KEYS: ${{ secrets.PROD_KEYS }}
+          GAME_URL: ${{ secrets.GAME_URL }}
+        run: |
+          mkdir -p game_files
+          echo "$PROD_KEYS" > prod.keys
+
+          # Descargar desde Google Drive manejando cookies de confirmación
+          curl -c /tmp/cookies.txt -s -L "$GAME_URL" > /dev/null
+          CONFIRM=$(grep -o 'confirm=[^&]*' /tmp/cookies.txt | cut -d= -f2 || true)
+          curl -Lb /tmp/cookies.txt "$GAME_URL&confirm=$CONFIRM" -o game_files/game.nsp
+
+      - name: Run build script
+        run: |
+          python3 scripts/build_ipa_from_nsp.py game_files -k prod.keys
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-ipa
+          path: game_files/*.ipa
+          retention-days: 1
