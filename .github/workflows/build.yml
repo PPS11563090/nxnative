@@ -20,22 +20,16 @@ jobs:
         env:
           KEYS_ID: ${{ secrets.KEYS_URL }}
           GAME_ID: ${{ secrets.GAME_URL }}
-          UPDATE_ID: ${{ secrets.UPDATE_URL }}
         run: |
           mkdir -p game_files
 
           # Descargar el archivo prod.keys original directamente desde Drive
           gdown "$KEYS_ID" -O prod.keys
 
-          # Descargar el juego base
+          # Descargar SOLO el juego base
           gdown "$GAME_ID" -O game_files/base.nsp
 
-          # Descargar la actualización
-          if [ -n "$UPDATE_ID" ]; then
-            gdown "$UPDATE_ID" -O game_files/update.nsp
-          fi
-
-          # Mostrar el tamaño de los archivos para confirmar la descarga
+          # Mostrar el tamaño del archivo para confirmar la descarga
           ls -lh game_files/
 
       - name: Run build script
