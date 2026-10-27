@@ -14,19 +14,25 @@ jobs:
       - name: Install dependencies
         run: |
           brew install xcodegen zstd spirv-cross glslang
+          pip3 install --break-system-packages gdown
 
       - name: Setup Game Files and Keys
         env:
           PROD_KEYS: ${{ secrets.PROD_KEYS }}
           GAME_URL: ${{ secrets.GAME_URL }}
+          UPDATE_URL: ${{ secrets.UPDATE_URL }}
         run: |
           mkdir -p game_files
           echo "$PROD_KEYS" > prod.keys
 
-          # Descargar desde Google Drive manejando cookies de confirmación
-          curl -c /tmp/cookies.txt -s -L "$GAME_URL" > /dev/null
-          CONFIRM=$(grep -o 'confirm=[^&]*' /tmp/cookies.txt | cut -d= -f2 || true)
-          curl -Lb /tmp/cookies.txt "$GAME_URL&confirm=$CONFIRM" -o game_files/game.nsp
+          # Descarga del juego base
+          gdown --fuzzy "$GAME_URL" -O game_files/base.nsp
+
+          # Descarga de la actualización
+          gdown --fuzzy "$UPDATE_URL" -O game_files/update.nsp
+
+          # Muestra en consola el tamaño de los archivos para verificar que se descargaron completos
+          ls -lh game_files/
 
       - name: Run build script
         run: |
