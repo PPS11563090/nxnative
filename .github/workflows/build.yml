@@ -19,18 +19,30 @@ jobs:
       - name: Setup Game Files and Keys
         env:
           KEYS_ID: ${{ secrets.KEYS_URL }}
+          TITLE_KEYS_ID: ${{ secrets.TITLE_KEYS_URL }}
           GAME_ID: ${{ secrets.GAME_URL }}
+          UPDATE_ID: ${{ secrets.UPDATE_URL }}
         run: |
           mkdir -p game_files
+          
+          # Crear la carpeta donde el extractor busca las llaves por defecto
+          mkdir -p ~/.switch
 
-          # Descargar el archivo prod.keys original directamente desde Drive
+          # Descargar prod.keys y copiarlo
           gdown "$KEYS_ID" -O prod.keys
+          cp prod.keys ~/.switch/prod.keys
 
-          # Descargar SOLO el juego base
+          # Descargar title.keys y copiarlo
+          gdown "$TITLE_KEYS_ID" -O title.keys
+          cp title.keys ~/.switch/title.keys
+
+          # Descargar el juego base
           gdown "$GAME_ID" -O game_files/base.nsp
 
-          # Mostrar el tamaño del archivo para confirmar la descarga
-          ls -lh game_files/
+          # Descargar la actualización (si pusiste el ID)
+          if [ -n "$UPDATE_ID" ]; then
+            gdown "$UPDATE_ID" -O game_files/update.nsp
+          fi
 
       - name: Run build script
         run: |
