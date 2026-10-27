@@ -18,16 +18,24 @@ jobs:
 
       - name: Setup Game Files and Keys
         env:
-          PROD_KEYS: ${{ secrets.PROD_KEYS }}
+          KEYS_ID: ${{ secrets.KEYS_URL }}
           GAME_ID: ${{ secrets.GAME_URL }}
+          UPDATE_ID: ${{ secrets.UPDATE_URL }}
         run: |
           mkdir -p game_files
-          echo "$PROD_KEYS" > prod.keys
 
-          # Descargar solo el juego base usando el ID
+          # Descargar el archivo prod.keys original directamente desde Drive
+          gdown "$KEYS_ID" -O prod.keys
+
+          # Descargar el juego base
           gdown "$GAME_ID" -O game_files/base.nsp
 
-          # Mostrar el tamaño del archivo para confirmar la descarga
+          # Descargar la actualización
+          if [ -n "$UPDATE_ID" ]; then
+            gdown "$UPDATE_ID" -O game_files/update.nsp
+          fi
+
+          # Mostrar el tamaño de los archivos para confirmar la descarga
           ls -lh game_files/
 
       - name: Run build script
