@@ -14,7 +14,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew install xcodegen zstd spirv-cross glslang
-          pip3 install --break-system-packages gdown
+          pip3 install --break-system-packages gdown lz4 capstone fonttools
 
       - name: Setup Game Files and Keys
         env:
