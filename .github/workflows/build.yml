@@ -24,29 +24,51 @@ jobs:
           UPDATE_ID: ${{ secrets.UPDATE_URL }}
         run: |
           mkdir -p game_files
-          
-          # Crear la carpeta donde el extractor busca las llaves por defecto
           mkdir -p ~/.switch
 
-          # Descargar prod.keys y copiarlo
           gdown "$KEYS_ID" -O prod.keys
           cp prod.keys ~/.switch/prod.keys
 
-          # Descargar title.keys y copiarlo
           gdown "$TITLE_KEYS_ID" -O title.keys
           cp title.keys ~/.switch/title.keys
 
-          # Descargar el juego base
           gdown "$GAME_ID" -O game_files/base.nsp
 
-          # Descargar la actualización (si pusiste el ID)
           if [ -n "$UPDATE_ID" ]; then
             gdown "$UPDATE_ID" -O game_files/update.nsp
           fi
 
+      - name: Inspect NSPs
+        run: |
+          python3 - <<'EOF'
+          import struct, os
+          for p in ["game_files/base.nsp", "game_files/update.nsp"]:
+              if not os.path.exists(p):
+                  print(p, "no existe, se omite")
+                  continue
+              print(p, "tamaño total:", os.path.getsize(p))
+              with open(p, "rb") as f:
+                  magic, n, strtab, _ = struct.unpack("<4sIII", f.read(16))
+                  print("  magic:", magic, "entries:", n)
+                  ents = [struct.unpack("<QQII", f.read(24)) for _ in range(n)]
+                  names = f.read(strtab)
+                  for off, size, noff, _ in ents:
+                      name = names[noff:names.index(b"\0", noff)].decode()
+                      flag = "  <-- SOSPECHOSO" if name.endswith(".nca") and size < 0xC00 else ""
+                      print(f"  off={off:>12} size={size:>12}  {name}{flag}")
+          EOF
+
       - name: Run build script
         run: |
           python3 scripts/build_ipa_from_nsp.py game_files -k prod.keys
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: game_files/*_build/logs/
+          retention-days: 3
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
